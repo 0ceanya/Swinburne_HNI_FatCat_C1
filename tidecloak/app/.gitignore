@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets and local state never belong in the repo.
+.env
+.env.local
+.env.*.local
+backend/data/

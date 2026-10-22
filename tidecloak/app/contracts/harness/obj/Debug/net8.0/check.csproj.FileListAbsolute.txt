@@ -1,0 +1,10 @@
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\check.GeneratedMSBuildEditorConfig.editorconfig
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\check.csproj.CoreCompileInputs.cache
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\check.sourcelink.json
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\bin\Debug\net8.0\ForsetiCompileCheck.deps.json
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\bin\Debug\net8.0\ForsetiCompileCheck.dll
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\bin\Debug\net8.0\ForsetiCompileCheck.pdb
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\ForsetiCompileCheck.dll
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\refint\ForsetiCompileCheck.dll
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\ForsetiCompileCheck.pdb
+C:\Swinburne Class\HackathonRmit2026\Swinburne_HNI_FatCat_C1\tidecloak\app\contracts\harness\obj\Debug\net8.0\ref\ForsetiCompileCheck.dll

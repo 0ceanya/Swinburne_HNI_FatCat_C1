@@ -1,0 +1,11 @@
+{
+  "realm": "signguard",
+  "auth-server-url": "http://localhost:8081/",
+  "resource": "signguard-client",
+  "vendorId": "07aea1cd-3b4c-4eef-9f9a-7c9f50e8fc5d",
+  "homeOrkUrl": "https://ork1.tideprotocol.com",
+  "public-client": true,
+  "jwk": {
+    "keys": []
+  }
+}

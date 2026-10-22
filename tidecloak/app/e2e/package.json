@@ -1,0 +1,8 @@
+{
+  "name": "signguard-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Drives SignGuard + Tide's real windows in headless Chromium. Not part of npm run check (needs live TideCloak + Tide network).",
+  "scripts": { "install-browser": "playwright install chromium" },
+  "dependencies": { "playwright": "^1.55.0" }
+}

@@ -1,0 +1,35 @@
+{
+  "realm": "signguard",
+  "auth-server-url": "http://localhost:8081/",
+  "ssl-required": "external",
+  "resource": "signguard-client",
+  "public-client": true,
+  "confidential-port": 0,
+  "jwk": {
+    "keys": [
+      {
+        "kid": "PEGe8diHOYuiVGslvqnWhsddwP69Ze22V3bvU0oueTw",
+        "kty": "OKP",
+        "alg": "EdDSA",
+        "use": "sig",
+        "crv": "Ed25519",
+        "x": "r7nhe7pS4tR369HC2EkDjrLzpbBRwPIoyPZ57935Q1U"
+      }
+    ]
+  },
+  "backgroundUrl": "http://localhost:8081/realms/signguard/tide-idp-resources/images/BACKGROUND_IMAGE",
+  "logoUrl": "http://localhost:8081/realms/signguard/tide-idp-resources/images/LOGO",
+  "homeOrkUrl": "https://ork1.tideprotocol.com",
+  "vendorId": "4590afb4-1471-4b95-86bf-3f35a7e1805e",
+  "client-origin-auth-http://localhost:5173": "tfKa0w4mUsXyZLdhhuWtt2odc2xp1ER7mbTWuQuL1rhgOONxOmYfKNtSLUKShaL0HMs5eFs2qdcD/ssMEhZFAA==",
+  "client-origin-auth-http://localhost:4173": "3TKmXxu+uK7RcCPsutLHr66iZ4GXxbP4NyI1RKlHz/NwzlXOPmrOSoLZ1A92qnNPe7nS/cM1B5iI1iEZldpDDA==",
+  "client-origin-auth-http://localhost:8081": "Z6Zd18253xb2g2e2f2GosY54yq/92lu86t4TIXVp6yoj0QqRaYWBwrV2NbxBCk7t3E4k+QjpHcYybQ0QNPTkBg==",
+  "gVVK": "AFB9E17BBA52E2D477EBD1C2D849038EB2F3A5B051C0F228C8F679EFDDF94355",
+  "vvkId": "4590afb4-1471-4b95-86bf-3f35a7e1805e",
+  "orkUrl": "https://ork1.tideprotocol.com",
+  "payerPublic": "200000b967a7799ffd4476e1074777ebc83bec23a3843cb2e5ca43c83561802c8e646b",
+  "obfGVVK": "AFB9E17BBA52E2D477EBD1C2D849038EB2F3A5B051C0F228C8F679EFDDF94355",
+  "gVRKCertificate": "R+noBVjiNy1uBDxRa550Ymq3HZ7bNanBKoJYL6Ewhr7y3BaEMuZ6T0ZNpgbvIBAqJ1LzWVvFtScsANxWdCduCg==",
+  "thresholdT": 14,
+  "thresholdN": 20
+}

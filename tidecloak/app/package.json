@@ -1,0 +1,22 @@
+{
+  "name": "signguard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SignGuard: quorum approval for company digital signatures, on TideCloak.",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "check": "npm run typecheck && npm run test && npm run build"
+  }
+}
