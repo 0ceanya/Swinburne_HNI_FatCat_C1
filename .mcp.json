@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "tide-pack": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@tideorg/mcp"],
+      "env": {}
+    }
+  }
+}
