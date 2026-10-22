@@ -1,37 +1,29 @@
 import { canonicalJson, sha256Hex } from "../lib/encoding.js";
-import type { Actor } from "./document.js";
+import type { Actor } from "./vaultKey.js";
 
 export const GENESIS_HASH = "0".repeat(64);
 
 export type AuditEvent =
-  | "policy.bootstrapped"
-  | "policy.proposed"
-  | "policy.endorsed"
-  | "policy.activated"
-  | "tide.rule_signed"
-  | "tide.encryption_policy_stored"
-  | "document.created"
-  | "document.edited"
-  | "document.submitted"
-  | "document.withdrawn"
-  | "document.signed"
-  | "signing.initialized"
-  | "signing.approved"
-  | "signing.rejected"
-  | "signing.expired"
-  | "signing.denied_attempt"
-  | "member.invited"
-  | "member.tier_change_requested"
-  | "member.join_requested"
-  | "member.join_decided";
+  | "tide.vault_policy_signed"
+  | "key.registered"
+  | "key.sealed"
+  | "key.seal_refused"
+  | "release.requested"
+  | "request.approved"
+  | "request.rejected"
+  | "request.cancelled"
+  | "request.expired"
+  | "request.denied_attempt"
+  | "request.finish_started"
+  | "release.completed";
 
 export interface AuditEntryProps {
   seq: number;
   at: string;
   event: AuditEvent;
   actor: Actor;
-  documentId: string | null;
-  contentHash: string | null;
+  keyId: string | null;
+  requestId: string | null;
   details: Record<string, unknown>;
   prevHash: string;
   hash: string;
@@ -43,8 +35,8 @@ export class AuditEntry {
 
   static hashOf(p: Omit<AuditEntryProps, "hash">): string {
     return sha256Hex(canonicalJson({
-      seq: p.seq, at: p.at, event: p.event, actor: p.actor, documentId: p.documentId,
-      contentHash: p.contentHash, details: p.details, prevHash: p.prevHash,
+      seq: p.seq, at: p.at, event: p.event, actor: p.actor, keyId: p.keyId,
+      requestId: p.requestId, details: p.details, prevHash: p.prevHash,
     }));
   }
 
@@ -71,27 +63,19 @@ export interface ChainCheck {
   length: number;
   /** First entry that fails, if any. */
   brokenAtSeq: number | null;
-  /** Recomputed hash per seq, used to check Tide-signed anchors against what is stored. */
-  recomputed: Map<number, string>;
 }
 
-/**
- * Recompute the chain from the stored fields. `recomputed` uses each entry's own content, so an
- * attacker who edits a row and then rewrites every later hash still produces different values at
- * the anchored positions than the ones the Tide network signed.
- */
+/** Recompute the chain from the stored fields and report the first entry that does not follow. */
 export function checkChain(entries: AuditEntry[]): ChainCheck {
-  const recomputed = new Map<number, string>();
   let prevHash = GENESIS_HASH;
   let brokenAtSeq: number | null = null;
   entries.forEach((entry, i) => {
     const { hash: _stored, ...rest } = entry.props;
     const real = AuditEntry.hashOf({ ...rest, prevHash });
-    recomputed.set(entry.props.seq, real);
     if (brokenAtSeq === null && (!entry.chainsTo(i === 0 ? null : entries[i - 1]!) || entry.props.prevHash !== prevHash)) {
       brokenAtSeq = entry.props.seq;
     }
     prevHash = real;
   });
-  return { ok: brokenAtSeq === null, length: entries.length, brokenAtSeq, recomputed };
+  return { ok: brokenAtSeq === null, length: entries.length, brokenAtSeq };
 }

@@ -1,5 +1,5 @@
 import { verifyTideCloakToken } from "@tidecloak/verify";
-import { tiersFromRoles, DECRYPT_ROLE, ENCRYPT_ROLE } from "../domain/tier.js";
+import { isBoardMember, tiersFromRoles } from "../domain/tier.js";
 import type { Principal } from "../usecases/context.js";
 import { DpopError, verifyDpop, type DpopOptions } from "./dpop.js";
 
@@ -65,9 +65,8 @@ export async function authenticate(req: IncomingAuth, opts: AuthOptions): Promis
     lastName: claims.family_name ?? "",
     tiers: tiersFromRoles(realmRoles),
     realmRoles,
+    onBoard: isBoardMember(realmRoles),
     isRealmAdmin: rm.includes("tide-realm-admin"),
-    canEncrypt: realmRoles.includes(ENCRYPT_ROLE),
-    canDecrypt: realmRoles.includes(DECRYPT_ROLE),
     tideUserKey: claims.tideuserkey ?? "",
     deviceKey,
   };

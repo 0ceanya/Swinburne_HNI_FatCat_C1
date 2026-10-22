@@ -1,5 +1,7 @@
 # SignGuard — Build Plan
 
+> **Superseded (2026-10-22).** SignGuard was reworked from a document-approval workflow into a **key vault**: third-party keys locked by the Tide network, each with a permission level (= the number of board approvals needed). The current design is in `tidecloak/app/README.md` and `handoff.md`. This plan is kept for history.
+
 SignGuard makes sure **no single person can get a high-value company document signed alone**. The record of who approved it is cryptographic, not a database row anyone with server access could edit.
 
 This plan builds on the two Word documents in this folder: the pitch and the MVP App Plan. It updates the App Plan with what Tide's own tooling (the `tide-pack` MCP server, "Raziel") confirmed about how TideCloak works.

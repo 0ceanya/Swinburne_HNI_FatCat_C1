@@ -1,8 +1,5 @@
 import { secureFetch } from "@/tide/tide";
-import type {
-  AuditRow, AuditVerification, DirectoryMember, Doc, Group, JoinRequest, Me, PendingChange, Policy, PolicyRule,
-  ServerConfig, SigningRequest, Tier, TideSetup,
-} from "./types";
+import type { AuditRow, AuditVerification, BoardMember, FinishKit, KeyRequest, Level, Me, ServerConfig, TideSetup, VaultKey } from "./types";
 
 /** An error the server explained: `code` is stable, `message` is safe to show. */
 export class ApiError extends Error {
@@ -25,7 +22,7 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
       headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-  } catch (e) {
+  } catch {
     throw new ApiError(0, "NETWORK", "Cannot reach SignGuard. Check your connection and try again.");
   }
   const text = await res.text();
@@ -38,64 +35,48 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return json as T;
 }
 
-export interface DraftInput {
-  type: string;
-  title: string;
-  amountDong: string;
-  resourceGroupId: string;
-  sealing: string;
-  sealed: { counterparty: string; bankAccount: string; description: string };
+export interface NewKeyInput {
+  name: string;
+  kind: string;
+  provider: string;
+  description: string;
+  hint: string;
+  level: Level;
+  /** The encryption draft from this browser: ciphertext only. */
+  request: string;
+}
+
+export interface Inbox {
+  waitingForMe: KeyRequest[];
+  readyToFinish: KeyRequest[];
+  mine: KeyRequest[];
+  recent: KeyRequest[];
 }
 
 export const api = {
   config: () => call<ServerConfig>("GET", "/config"),
   me: () => call<Me>("GET", "/me"),
 
-  documents: (q: { status?: string; type?: string } = {}) => {
-    const qs = new URLSearchParams(Object.entries(q).filter(([, v]) => v) as [string, string][]).toString();
-    return call<Doc[]>("GET", `/documents${qs ? `?${qs}` : ""}`);
-  },
-  document: (id: string) => call<{ document: Doc; requests: SigningRequest[] }>("GET", `/documents/${id}`),
-  createDocument: (input: DraftInput) => call<Doc>("POST", "/documents", input),
-  editDocument: (id: string, patch: Partial<DraftInput>) => call<Doc>("PATCH", `/documents/${id}`, patch),
-  withdraw: (id: string) => call<Doc>("POST", `/documents/${id}/withdraw`),
-  submit: (id: string) => call<{ document: Doc; request: SigningRequest; signingRule: string | null }>("POST", `/documents/${id}/submit`),
+  keys: () => call<VaultKey[]>("GET", "/keys"),
+  key: (id: string) => call<{ key: VaultKey; requests: KeyRequest[] }>("GET", `/keys/${encodeURIComponent(id)}`),
+  registerKey: (input: NewKeyInput) => call<{ key: VaultKey; request: KeyRequest }>("POST", "/keys", input),
+  requestRelease: (keyId: string, body: { reason: string; request: string }) => call<KeyRequest>("POST", `/keys/${encodeURIComponent(keyId)}/release`, body),
 
-  inbox: () => call<{ waitingForMe: SigningRequest[]; readyToSign: SigningRequest[]; mine: SigningRequest[] }>("GET", "/signing-requests"),
-  request: (id: string) => call<{ request: SigningRequest; signingRule: string | null }>("GET", `/signing-requests/${id}`),
-  openOnTide: (id: string, request: string) => call<SigningRequest>("POST", `/signing-requests/${id}/tide-request`, { request }),
-  /** The hash goes in the PATH so the device's DPoP proof covers exactly what the approver saw. */
-  approve: (id: string, contentHash: string, body: { request?: string; baseVersion?: number }) =>
-    call<SigningRequest>("POST", `/signing-requests/${id}/approve/${contentHash}`, body),
-  reject: (id: string, reason: string) => call<SigningRequest>("POST", `/signing-requests/${id}/reject`, { reason }),
-  recordSignature: (id: string, signature: string) => call<{ request: SigningRequest; document: Doc }>("POST", `/signing-requests/${id}/signature`, { signature }),
-
-  policies: () => call<Policy[]>("GET", "/policy"),
-  proposePolicy: (rules: PolicyRule[], reason: string) => call<Policy>("POST", "/policy/drafts", { rules, reason }),
-  endorsePolicy: (version: number) => call<Policy>("POST", `/policy/${version}/endorse`),
-  activatePolicy: (version: number) => call<Policy>("POST", `/policy/${version}/activate`),
+  inbox: () => call<Inbox>("GET", "/requests"),
+  request: (id: string) => call<{ request: KeyRequest; key: VaultKey | null }>("GET", `/requests/${encodeURIComponent(id)}`),
+  approve: (id: string, request: string) => call<KeyRequest>("POST", `/requests/${encodeURIComponent(id)}/approve`, { request }),
+  reject: (id: string, reason: string) => call<KeyRequest>("POST", `/requests/${encodeURIComponent(id)}/reject`, { reason }),
+  cancel: (id: string) => call<KeyRequest>("POST", `/requests/${encodeURIComponent(id)}/cancel`),
+  finishKit: (id: string) => call<FinishKit>("POST", `/requests/${encodeURIComponent(id)}/finish-kit`),
+  finish: (id: string, body: { request: string; ciphertext?: string }) => call<{ request: KeyRequest; key: VaultKey }>("POST", `/requests/${encodeURIComponent(id)}/finish`, body),
 
   tideSetup: () => call<TideSetup>("GET", "/tide/setup"),
   adminPolicy: () => call<{ policy: string }>("GET", "/tide/admin-policy"),
-  storeRuleSignature: (version: number, ruleId: string, signature: string) =>
-    call<{ key: string; signatureVerified: boolean }>("POST", `/tide/rules/${version}/${ruleId}`, { signature }),
-  storeSealedSignature: (signature: string) => call<{ key: string; signatureVerified: boolean }>("POST", "/tide/sealed-fields", { signature }),
-  sealedPolicy: () => call<{ policy: string }>("GET", "/tide/sealed-fields"),
+  storeVaultPolicy: (threshold: number, signature: string) => call<{ key: string; signatureVerified: boolean }>("POST", `/tide/vault-policies/${threshold}`, { signature }),
 
-  members: () => call<{ members: DirectoryMember[]; pendingChanges: PendingChange[]; joinRequests: JoinRequest[]; groups: Group[]; tideConsoleUrl: string }>("GET", "/members"),
-  continueTiers: (userId: string) => call<{ status: string; detail: string; remaining?: string[] }>("POST", `/members/${userId}/tier/continue`),
-  fileJoinRequest: (input: { requestedTier: string; note?: string; email?: string; name?: string }) => call<JoinRequest>("POST", "/join-requests", input),
-  myJoinRequest: () => call<{ request: JoinRequest | null }>("GET", "/join-requests/mine"),
-  decideJoinRequest: (id: string, decision: "approve" | "reject", note?: string) =>
-    call<{ request: JoinRequest; outcome: { status: string; detail: string; remaining?: string[] } | null }>("POST", `/join-requests/${id}/decision`, { decision, note }),
-  setTiers: (userId: string, tiers: Tier[]) => call<{ status: string; detail: string; remaining?: string[] }>("POST", `/members/${userId}/tier`, { tiers }),
-  invite: (input: { firstName: string; lastName: string; email?: string }) => call<{ status: string; detail: string; userId: string | null }>("POST", "/members/invite", input),
-  inviteLink: (userId: string) => call<{ link: string }>("POST", `/members/${userId}/invite-link`),
-  setGroups: (memberId: string, groups: string[]) => call<unknown>("POST", `/members/${memberId}/groups`, { groups }),
-  groups: () => call<Group[]>("GET", "/groups"),
-  createGroup: (g: { id: string; name: string; costCentre: string }) => call<Group>("POST", "/groups", g),
+  board: () => call<{ source: "tidecloak" | "sign-ins"; boardSize: number; members: BoardMember[] }>("GET", "/board"),
 
-  audit: (documentId?: string) => call<AuditRow[]>("GET", `/audit${documentId ? `?documentId=${encodeURIComponent(documentId)}` : ""}`),
+  audit: (keyId?: string) => call<AuditRow[]>("GET", `/audit${keyId ? `?keyId=${encodeURIComponent(keyId)}` : ""}`),
   verifyAudit: () => call<AuditVerification>("GET", "/audit/verify"),
   exportAudit: () => call<unknown>("GET", "/audit/export"),
 };

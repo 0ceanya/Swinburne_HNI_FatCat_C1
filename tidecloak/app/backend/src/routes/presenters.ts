@@ -1,83 +1,37 @@
-import type { ApprovalPolicy } from "../domain/approvalPolicy.js";
 import type { AuditEntry } from "../domain/auditEntry.js";
-import type { Document } from "../domain/document.js";
-import type { SigningRequest } from "../domain/signingRequest.js";
+import type { KeyRequest } from "../domain/keyRequest.js";
+import type { VaultKey } from "../domain/vaultKey.js";
 
-export function presentDocument(doc: Document) {
-  const p = doc.snapshot();
-  return {
-    id: p.id,
-    number: p.number,
-    type: p.type,
-    title: p.title,
-    amountDong: p.amount.toString(),
-    amountFormatted: p.amount.format(),
-    resourceGroupId: p.resourceGroupId,
-    sealing: p.sealing,
-    sealed: p.sealed,
-    createdBy: p.createdBy,
-    createdAt: p.createdAt,
-    updatedAt: p.updatedAt,
-    editVersion: p.editVersion,
-    status: p.status,
-    contentHash: p.contentHash?.hex ?? null,
-    submittedAt: p.submittedAt,
-    signedAt: p.signedAt,
-    currentRequestId: p.currentRequestId,
-    receipts: p.receipts,
-  };
+/** Key metadata. The ciphertext is included: only the Tide network can open it, and only with the quorum. */
+export function presentKey(key: VaultKey) {
+  return key.snapshot();
 }
 
-export function presentRequest(req: SigningRequest) {
+/**
+ * A request as every board member may see it. The approvers' dokens and signatures are left out:
+ * they leave the server only in the requester's finish kit.
+ */
+export function presentRequest(req: KeyRequest) {
   const p = req.snapshot();
   return {
     id: p.id,
-    documentId: p.documentId,
-    documentNumber: p.documentNumber,
-    documentType: p.documentType,
-    amountDong: p.amountDong,
-    contentHash: p.contentHash,
-    requirement: p.requirement,
-    initiator: { memberId: p.initiator.memberId, name: p.initiator.name },
-    mode: p.mode,
+    keyId: p.keyId,
+    keyName: p.keyName,
+    keyLevel: p.keyLevel,
+    operation: p.operation,
+    quorum: p.quorum,
+    othersNeeded: req.othersNeeded(),
+    requester: { memberId: p.requester.memberId, name: p.requester.name },
+    reason: p.reason,
     status: p.status,
-    approvals: p.approvals.map((a) => ({ memberId: a.memberId, name: a.name, countedAs: a.countedAs, at: a.at, proof: a.proof })),
-    outstanding: req.isOpen() ? req.outstanding() : [],
-    totalRequired: p.requirement.requiredTiers.reduce((n, t) => n + t.count, 0),
+    tideRequest: p.tideRequest,
+    approvals: p.approvals.map((a) => ({ memberId: a.memberId, name: a.name, at: a.at, dokenVerified: a.dokenVerified })),
     rejection: p.rejection,
     createdAt: p.createdAt,
     expiresAt: p.expiresAt,
     closedAt: p.closedAt,
     closedReason: p.closedReason,
-    statement: p.statement,
-    auditAnchor: p.auditAnchor,
-    tideRequest: p.tideRequest,
-    tideRequestVersion: p.tideRequestVersion,
-    receipts: p.receipts,
-  };
-}
-
-export function presentPolicy(policy: ApprovalPolicy, networkRules?: { ruleId: string; signed: boolean }[]) {
-  const p = policy.snapshot();
-  return {
-    version: p.version,
-    status: p.status,
-    reason: p.reason,
-    proposedBy: p.proposedBy,
-    proposedAt: p.proposedAt,
-    endorsements: p.endorsements,
-    activatedAt: p.activatedAt,
-    rules: p.rules.map((r) => ({
-      id: r.id,
-      label: r.label,
-      documentTypes: r.documentTypes,
-      minDong: r.minDong.toString(),
-      maxDong: r.maxDong === null ? null : r.maxDong.toString(),
-      requiredTiers: r.requiredTiers,
-      initiatorMayApprove: r.initiatorMayApprove,
-      network: r.network,
-      networkSigned: networkRules?.find((n) => n.ruleId === r.id)?.signed ?? null,
-    })),
+    finishedWith: p.finishedWith,
   };
 }
 

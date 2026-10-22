@@ -12,12 +12,12 @@ const route = useRoute();
       <div class="row"><img src="/favicon.png" alt="" width="48" height="48" style="border-radius: 50%" /><h1 style="margin: 0">SignGuard</h1></div>
       <p class="muted small" style="margin: 0">{{ session.config?.org.name ?? "" }}</p>
       <h2>Sign in</h2>
-      <p>No one at the company can get a high-value document signed alone. Every approval is signed with the approver's own Tide key.</p>
+      <p>The company's keys (digital signatures, cloud root keys, API keys) are locked by the Tide network. No one can unlock a key alone: the board approves, and the network checks every approval.</p>
       <p v-if="session.error" class="small" role="alert" style="color: var(--rejected)">{{ session.error }}</p>
       <button class="btn btn-primary btn-block" @click="session.login(route.fullPath === '/signup' ? '/' : route.fullPath)">Sign in with your Tide key</button>
       <p class="muted small">You type your password in Tide's own window. Tide's network checks it jointly; no server, including ours, ever sees it.</p>
       <hr class="sep" />
-      <p style="margin: 0">New to {{ session.config?.org.name ?? "the company" }}? <RouterLink to="/signup">Create an account</RouterLink></p>
+      <p style="margin: 0">New here? <RouterLink to="/signup">Create a Tide account</RouterLink></p>
     </div>
   </main>
 </template>

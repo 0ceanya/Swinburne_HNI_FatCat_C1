@@ -1,27 +1,4 @@
-import type { DocumentStatus, DocumentType, SigningStatus, Tier } from "@/api/types";
-
-/** 640.000.000 ₫. Works on digit strings so amounts above 2^53 stay exact. */
-export function formatVnd(dong: string | bigint): string {
-  const s = typeof dong === "bigint" ? dong.toString() : dong;
-  if (!/^\d+$/.test(s)) return "—";
-  return `${s.replace(/\B(?=(\d{3})+(?!\d))/g, ".")} ₫`;
-}
-
-/** What a person typed ("640.000.000", "640 000 000 ₫") to canonical digits, or null. */
-export function parseVndInput(input: string): string | null {
-  const digits = input.replace(/[.\s₫,]/g, "");
-  if (!/^\d+$/.test(digits)) return null;
-  const canonical = digits.replace(/^0+(?=\d)/, "");
-  return canonical.length > 16 ? null : canonical;
-}
-
-/** 640M ₫ style, for tight spaces. */
-export function compactVnd(dong: string): string {
-  const n = BigInt(/^\d+$/.test(dong) ? dong : "0");
-  if (n >= 1_000_000_000n) return `${(Number(n / 10_000_000n) / 100).toLocaleString("vi-VN")} tỷ ₫`;
-  if (n >= 1_000_000n) return `${(Number(n / 10_000n) / 100).toLocaleString("vi-VN")} tr ₫`;
-  return formatVnd(dong);
-}
+import type { KeyKind, KeyStatus, Level, Operation, RequestStatus, Tier } from "@/api/types";
 
 export const shortHash = (hex: string | null | undefined) => (hex && hex.length >= 8 ? `${hex.slice(0, 4)}…${hex.slice(-4)}` : "—");
 
@@ -39,29 +16,51 @@ export function timeAgo(iso: string, now = Date.now()): string {
   return `${Math.floor(s / 86400)} d ago`;
 }
 
-// Vietnamese labels for document types and statuses; English elsewhere for the MVP.
-export const DOC_TYPE_LABEL: Record<DocumentType, string> = { payment_voucher: "Phiếu chi", e_invoice: "Hóa đơn" };
-export const DOC_TYPE_EN: Record<DocumentType, string> = { payment_voucher: "Payment voucher", e_invoice: "E-invoice" };
+export type Tone = "neutral" | "pending" | "approved" | "rejected" | "sealed";
 
-export const DOC_STATUS: Record<DocumentStatus, { label: string; tone: "neutral" | "pending" | "approved" }> = {
-  draft: { label: "Nháp · Draft", tone: "neutral" },
-  pending_approval: { label: "Chờ duyệt · Pending", tone: "pending" },
-  signed: { label: "Đã ký · Signed", tone: "approved" },
+export const LEVEL_LABEL: Record<Level, string> = { 1: "Standard", 2: "Elevated", 3: "High", 4: "Critical" };
+export const LEVEL_TONE: Record<Level, Tone> = { 1: "neutral", 2: "pending", 3: "sealed", 4: "rejected" };
+
+export const KEY_STATUS: Record<KeyStatus, { label: string; tone: Tone }> = {
+  pending_seal: { label: "Waiting for the board to seal", tone: "pending" },
+  active: { label: "Sealed in the vault", tone: "sealed" },
+  rejected: { label: "Not sealed", tone: "neutral" },
 };
 
-export const REQUEST_STATUS: Record<SigningStatus, { label: string; tone: "neutral" | "pending" | "approved" | "rejected" }> = {
+export const OPERATION_LABEL: Record<Operation, string> = { seal: "Seal into the vault", release: "Unlock" };
+
+export const REQUEST_STATUS: Record<RequestStatus, { label: string; tone: Tone }> = {
   collecting: { label: "Collecting approvals", tone: "pending" },
-  quorum_met: { label: "Ready to sign", tone: "pending" },
-  signed: { label: "Signed", tone: "approved" },
+  ready: { label: "Approved, waiting for the requester to finish", tone: "pending" },
+  completed: { label: "Done", tone: "approved" },
   rejected: { label: "Rejected", tone: "rejected" },
-  expired: { label: "Expired", tone: "neutral" },
   cancelled: { label: "Cancelled", tone: "neutral" },
+  expired: { label: "Expired", tone: "neutral" },
 };
 
-export const TIER_LABEL: Record<Tier, string> = { viewer: "Viewer", drafter: "Drafter", approver: "Approver", director: "Director", owner: "Owner" };
+export const TIER_LABEL: Record<Tier, string> = { viewer: "Viewer", drafter: "Accountant", approver: "Approver", director: "Director", owner: "Owner" };
 export const tierNames = (tiers: Tier[]) => tiers.map((t) => TIER_LABEL[t]).join(", ");
 
-/** Short, plain explanation of a server error code for banners. */
+export const kindLabel = (kinds: KeyKind[] | undefined, id: string) => kinds?.find((k) => k.id === id)?.label ?? id;
+
+/** "3 of 3 people", with a note when the level asks for more people than the board has. */
+export function quorumText(level: Level, boardSize: number): string {
+  const n = Math.min(level, boardSize);
+  const people = n === 1 ? "1 person (the requester alone, logged)" : `${n} of ${boardSize} board members`;
+  return level > boardSize ? `${people}: level ${level} is capped at the board size` : people;
+}
+
+/**
+ * A secret may be a file (a .p12 certificate, a key file). It is stored as a data URL so the same
+ * text round-trips through Tide's encryption and can be downloaded again after unlocking.
+ */
+export function parseFileSecret(secret: string): { name: string; mime: string; base64: string } | null {
+  const m = /^data:([^;,]*);name=([^;,]*);base64,([A-Za-z0-9+/=]*)$/.exec(secret);
+  return m ? { mime: m[1] || "application/octet-stream", name: decodeURIComponent(m[2]!), base64: m[3]! } : null;
+}
+
+export const fileSecret = (name: string, mime: string, base64: string) => `data:${mime || "application/octet-stream"};name=${encodeURIComponent(name)};base64,${base64}`;
+
 export function describeError(e: unknown): string {
   if (e && typeof e === "object" && "message" in e) return String((e as { message: unknown }).message);
   return "Something went wrong.";

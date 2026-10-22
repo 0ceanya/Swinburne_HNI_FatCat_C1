@@ -9,8 +9,7 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "grant": "tsx src/tools/grantTiers.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tidecloak/verify": "0.14.33",
