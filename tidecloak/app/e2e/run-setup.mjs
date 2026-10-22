@@ -1,4 +1,4 @@
-// As the owner (realm admin): approve the sealed-fields policy and every network rule in Tide.
+// As the owner (realm admin): approve every vault policy (1, 2 and 3 approvals) in Tide's window.
 import { approveInTide, launch, shot, signIn, textOf } from "./lib.mjs";
 
 const out = process.argv[2];

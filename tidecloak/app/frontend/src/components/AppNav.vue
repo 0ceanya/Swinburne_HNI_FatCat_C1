@@ -6,13 +6,12 @@ const session = useSession();
 // UI gating only: every one of these screens is enforced again by the server.
 const links = computed(() => [
   { to: "/", label: "Inbox", icon: "📥", show: true },
-  { to: "/documents", label: "Documents", icon: "📄", show: session.isMember },
-  { to: "/policy", label: "Policy", icon: "⚖", show: session.isMember },
-  { to: "/members", label: "Members", icon: "👥", show: session.has("owner", "director") },
-  { to: "/audit", label: "Audit", icon: "🧾", show: session.has("owner", "director") },
+  { to: "/vault", label: "Vault", icon: "🔐", show: true },
+  { to: "/board", label: "Board", icon: "👥", show: true },
+  { to: "/audit", label: "Audit", icon: "🧾", show: true },
   { to: "/setup", label: "Tide setup", icon: "🔑", show: !!session.me?.isRealmAdmin },
 ].filter((l) => l.show));
-const mobileLinks = computed(() => [...links.value.filter((l) => ["/", "/documents", "/audit"].includes(l.to)), { to: "/me", label: "Me", icon: "👤", show: true }]);
+const mobileLinks = computed(() => [...links.value.filter((l) => ["/", "/vault", "/audit"].includes(l.to)), { to: "/me", label: "Me", icon: "👤", show: true }]);
 </script>
 
 <template>

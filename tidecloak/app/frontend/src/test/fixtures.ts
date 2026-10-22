@@ -1,36 +1,39 @@
-import type { Doc, Me, SigningRequest } from "@/api/types";
+import type { KeyRequest, Me, ServerConfig, VaultKey } from "@/api/types";
 
-export const HASH = "3f9a" + "0".repeat(56) + "c21e";
-
-export function makeRequest(over: Partial<SigningRequest> = {}): SigningRequest {
+export function makeKey(over: Partial<VaultKey> = {}): VaultKey {
   return {
-    id: "req_1", documentId: "doc_1", documentNumber: "PC-0142", documentType: "payment_voucher", amountDong: "640000000",
-    contentHash: HASH,
-    requirement: { policyVersion: 1, ruleId: "high", label: "Over 500M ₫: drafter + director + owner", requiredTiers: [{ tier: "director", count: 1 }, { tier: "owner", count: 1 }], initiatorMayApprove: false, network: { role: "sg_director", threshold: 2 } },
-    initiator: { memberId: "u-acct", name: "Trần Bình" }, mode: "tide", status: "collecting",
-    approvals: [{ memberId: "u-dir", name: "Lê Cường", countedAs: "director", at: "2026-10-22T03:00:00Z", proof: { kind: "tide-enclave", dokenVerified: true } }],
-    outstanding: ["owner"], totalRequired: 2, rejection: null, createdAt: "2026-10-22T02:00:00Z", expiresAt: "2026-10-29T02:00:00Z",
-    closedAt: null, closedReason: null, statement: "U1RBVEVNRU5U", auditAnchor: { seq: 4, hash: "a".repeat(64) },
-    tideRequest: "UkVRVUVTVA==", tideRequestVersion: 2, receipts: [],
+    id: "key_1", name: "AWS root", kind: "cloud_root", provider: "AWS", description: "Production account root", hint: "••••ROOT",
+    level: 4, quorum: 3, status: "active", ciphertext: "Q0lQSEVSVEVYVA==", createdBy: { id: "u-owner", name: "Nguyễn An" },
+    createdAt: "2026-10-22T01:00:00Z", sealedAt: "2026-10-22T01:30:00Z", sealRequestId: "req_0", releaseCount: 0, lastReleasedAt: null, lastReleasedTo: null,
     ...over,
   };
 }
 
-export function makeDoc(over: Partial<Doc> = {}): Doc {
+export function makeRequest(over: Partial<KeyRequest> = {}): KeyRequest {
   return {
-    id: "doc_1", number: "PC-0142", type: "payment_voucher", title: "Thanh toán thiết bị", amountDong: "640000000", amountFormatted: "640.000.000 ₫",
-    resourceGroupId: "general", sealing: "plaintext-dev", sealed: { counterparty: "Công ty TNHH Minh Phát", bankAccount: "VCB 0011004821", description: "" },
-    createdBy: { id: "u-acct", name: "Trần Bình" }, createdAt: "2026-10-22T01:00:00Z", updatedAt: "2026-10-22T02:00:00Z", editVersion: 1,
-    status: "pending_approval", contentHash: HASH, submittedAt: "2026-10-22T02:00:00Z", signedAt: null, currentRequestId: "req_1", receipts: [],
+    id: "req_1", keyId: "key_1", keyName: "AWS root", keyLevel: 4, operation: "release", quorum: 3, othersNeeded: 2,
+    requester: { memberId: "u-acct", name: "Trần Bình" }, reason: "Close the old billing account", status: "collecting",
+    tideRequest: "UkVRVUVTVA==",
+    approvals: [{ memberId: "u-dir", name: "Lê Cường", at: "2026-10-22T03:00:00Z", dokenVerified: true }],
+    rejection: null, createdAt: "2026-10-22T02:00:00Z", expiresAt: "2026-10-25T02:00:00Z", closedAt: null, closedReason: null, finishedWith: null,
     ...over,
   };
 }
 
 export function makeMe(over: Partial<Me> = {}): Me {
   return {
-    id: "u-owner", vuid: "v-owner", username: "nguyen.an", firstName: "An", lastName: "Nguyễn", displayName: "Nguyễn An",
-    tiers: ["viewer", "director", "owner"], realmRoles: ["sg_viewer", "sg_director", "sg_owner"], isRealmAdmin: true,
-    canEncrypt: false, canDecrypt: true, resourceGroups: ["general"],
+    id: "u-owner", vuid: "v-owner", username: "owner", firstName: "An", lastName: "Nguyễn Văn", displayName: "Nguyễn Văn An",
+    tiers: ["viewer", "director", "owner"], realmRoles: ["sg_viewer", "sg_director", "sg_owner"], onBoard: true, isRealmAdmin: true,
     ...over,
   };
 }
+
+export const config: ServerConfig = {
+  org: { name: "Công ty Thử nghiệm", taxCode: "0311111111" }, tideConsoleUrl: "", boardSize: 3, tag: "signguard-vault-v1",
+  kinds: [
+    { id: "cloud_root", label: "Cloud root credential", defaultLevel: 4, examples: "AWS root" },
+    { id: "digital_signature", label: "Digital signature (chữ ký số)", defaultLevel: 3, examples: "Viettel MySign" },
+    { id: "api_key", label: "API key", defaultLevel: 2, examples: "Stripe" },
+  ],
+  levels: [{ level: 1, label: "Standard", quorum: 1 }, { level: 2, label: "Elevated", quorum: 2 }, { level: 3, label: "High", quorum: 3 }, { level: 4, label: "Critical", quorum: 3 }],
+};

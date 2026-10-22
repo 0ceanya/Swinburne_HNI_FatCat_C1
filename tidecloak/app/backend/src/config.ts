@@ -25,7 +25,6 @@ export function loadEnvFile(path: string): Record<string, string> {
 export interface ServerConfig {
   port: number;
   dbPath: string;
-  caKeyPath: string;
   adapter: Record<string, unknown>;
   adapterPath: string;
   vendorId: string;
@@ -35,14 +34,12 @@ export interface ServerConfig {
   realmKeys: RealmKeys;
   allowedOrigins: string[];
   org: { name: string; taxCode: string };
-  allowUnsignedDev: boolean;
-  allowPlaintextDev: boolean;
+  /** People on the board. A key's quorum is its level, capped at this. */
+  boardSize: number;
   requireDpop: boolean;
   admin: { username: string; password: string } | null;
   tideConsoleUrl: string;
 }
-
-const bool = (v: string | undefined) => v === "true" || v === "1";
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const fileEnv = { ...loadEnvFile(resolve(TIDECLOAK_DIR, ".env")), ...loadEnvFile(resolve(BACKEND_DIR, ".env")) };
@@ -63,11 +60,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     .split(",").map((s) => s.trim().replace(/\/+$/, "")).filter(Boolean);
   const authServerUrl = String(adapter["auth-server-url"]).replace(/\/+$/, "");
   const password = get("KC_BOOTSTRAP_ADMIN_PASSWORD") ?? get("KC_ADMIN_PASSWORD");
+  // The demo board is fixed at three people: owner, director, accountant.
+  const boardSize = Number(get("SIGNGUARD_BOARD_SIZE") ?? 3);
+  if (!Number.isInteger(boardSize) || boardSize < 1 || boardSize > 10) throw new Error("SIGNGUARD_BOARD_SIZE must be a whole number from 1 to 10");
 
   return {
     port: Number(get("SIGNGUARD_PORT") ?? 3000),
-    dbPath: resolve(get("SIGNGUARD_DB") ?? resolve(BACKEND_DIR, "data", "signguard.db")),
-    caKeyPath: resolve(get("SIGNGUARD_CA_KEY") ?? resolve(BACKEND_DIR, "data", "mock-ca-key.json")),
+    // A fresh file for the vault: the old document-signing database (signguard.db) is left untouched.
+    dbPath: resolve(get("SIGNGUARD_DB") ?? resolve(BACKEND_DIR, "data", "vault.db")),
     adapter,
     adapterPath,
     vendorId: String(adapter.vendorId),
@@ -77,8 +77,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     realmKeys: jwk.keys,
     allowedOrigins: origins,
     org: { name: get("SIGNGUARD_ORG_NAME") ?? "Công ty TNHH SignGuard Demo", taxCode: get("SIGNGUARD_ORG_TAX_CODE") ?? "0312345678" },
-    allowUnsignedDev: bool(get("SIGNGUARD_ALLOW_UNSIGNED_DEV")),
-    allowPlaintextDev: bool(get("SIGNGUARD_ALLOW_PLAINTEXT_DEV")),
+    boardSize,
     requireDpop: get("SIGNGUARD_REQUIRE_DPOP") !== "false",
     admin: password ? { username: get("KC_BOOTSTRAP_ADMIN_USERNAME") ?? get("KC_ADMIN_USER") ?? "admin", password } : null,
     tideConsoleUrl: `${authServerUrl}/realms/${String(adapter.realm)}/tide-console/`,

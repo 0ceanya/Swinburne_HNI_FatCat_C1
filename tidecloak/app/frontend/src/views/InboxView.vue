@@ -1,28 +1,21 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
-import { api } from "@/api/client";
-import type { Doc, SigningRequest } from "@/api/types";
-import ApprovalProgress from "@/components/ApprovalProgress.vue";
+import { api, type Inbox } from "@/api/client";
 import Banner from "@/components/Banner.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import LevelBadge from "@/components/LevelBadge.vue";
+import QuorumProgress from "@/components/QuorumProgress.vue";
 import SkeletonRows from "@/components/SkeletonRows.vue";
-import { compactVnd, DOC_TYPE_LABEL, formatVnd, timeAgo } from "@/lib/format";
-import { useSession } from "@/stores/session";
+import StatusBadge from "@/components/StatusBadge.vue";
+import { OPERATION_LABEL, REQUEST_STATUS, timeAgo } from "@/lib/format";
 
-const session = useSession();
 const loading = ref(true);
 const error = ref<string | null>(null);
-const inbox = ref<{ waitingForMe: SigningRequest[]; readyToSign: SigningRequest[]; mine: SigningRequest[] }>({ waitingForMe: [], readyToSign: [], mine: [] });
-const drafts = ref<Doc[]>([]);
-const signed = ref<Doc[]>([]);
+const inbox = ref<Inbox>({ waitingForMe: [], readyToFinish: [], mine: [], recent: [] });
 
 async function load() {
-  if (!session.isMember) { loading.value = false; return; }
   try {
-    const [box, myDrafts, recent] = await Promise.all([api.inbox(), api.documents({ status: "draft" }), api.documents({ status: "signed" })]);
-    inbox.value = box;
-    drafts.value = myDrafts.filter((d) => d.createdBy.id === session.me?.id);
-    signed.value = recent.slice(0, 5);
+    inbox.value = await api.inbox();
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
@@ -42,48 +35,40 @@ onUnmounted(() => clearInterval(timer));
   <div class="stack">
     <div class="spread">
       <h1>Inbox</h1>
-      <RouterLink v-if="session.has('drafter')" to="/documents/new" class="btn btn-primary">+ New document</RouterLink>
+      <RouterLink to="/vault/new" class="btn btn-primary">+ Add a key</RouterLink>
     </div>
     <Banner v-if="error" tone="rejected">{{ error }}</Banner>
     <SkeletonRows v-if="loading" />
-    <template v-else-if="session.isMember">
+    <template v-else>
       <section class="stack">
-        <h2>Waiting for you ({{ inbox.waitingForMe.length }})</h2>
-        <EmptyState v-if="inbox.waitingForMe.length === 0" title="Nothing waiting for you">New approval requests for your tier will appear here.</EmptyState>
-        <RouterLink v-for="r in inbox.waitingForMe" :key="r.id" :to="`/approve/${r.id}`" class="card card-link">
-          <div class="spread"><strong>{{ DOC_TYPE_LABEL[r.documentType] }} #{{ r.documentNumber }}</strong><ApprovalProgress :request="r" /></div>
-          <div class="spread"><span class="num" style="font-size: 1.15rem; font-weight: 600">{{ formatVnd(r.amountDong) }}</span><span class="muted small">{{ r.requirement.label }}</span></div>
-          <div class="muted small">from {{ r.initiator.name }} · {{ timeAgo(r.createdAt) }}</div>
+        <h2>Waiting for your approval ({{ inbox.waitingForMe.length }})</h2>
+        <EmptyState v-if="inbox.waitingForMe.length === 0" title="Nothing waiting for you">When a board member asks to seal or unlock a key, it appears here.</EmptyState>
+        <RouterLink v-for="r in inbox.waitingForMe" :key="r.id" :to="`/requests/${r.id}`" class="card card-link">
+          <div class="spread"><strong>{{ OPERATION_LABEL[r.operation] }}: {{ r.keyName }}</strong><QuorumProgress :request="r" /></div>
+          <div class="spread"><LevelBadge :level="r.keyLevel" :quorum="r.quorum" /><span class="muted small">from {{ r.requester.name }} · {{ timeAgo(r.createdAt) }}</span></div>
+          <div class="small">“{{ r.reason }}”</div>
         </RouterLink>
       </section>
 
-      <section v-if="inbox.readyToSign.length" class="stack">
-        <h2>Approved, waiting for the network signature ({{ inbox.readyToSign.length }})</h2>
-        <RouterLink v-for="r in inbox.readyToSign" :key="r.id" :to="`/approve/${r.id}`" class="card card-link">
-          <div class="spread"><strong>{{ DOC_TYPE_LABEL[r.documentType] }} #{{ r.documentNumber }}</strong><span class="badge tone-pending">● Finish signing</span></div>
-          <div class="num">{{ compactVnd(r.amountDong) }}</div>
+      <section v-if="inbox.readyToFinish.length" class="stack">
+        <h2>Approved: ready for you to finish ({{ inbox.readyToFinish.length }})</h2>
+        <RouterLink v-for="r in inbox.readyToFinish" :key="r.id" :to="`/requests/${r.id}`" class="card card-link">
+          <div class="spread"><strong>{{ OPERATION_LABEL[r.operation] }}: {{ r.keyName }}</strong><span class="badge tone-approved">✓ Finish now</span></div>
         </RouterLink>
       </section>
 
       <section v-if="inbox.mine.length" class="stack">
         <h2>Your open requests ({{ inbox.mine.length }})</h2>
-        <RouterLink v-for="r in inbox.mine" :key="r.id" :to="`/documents/${r.documentId}`" class="card card-link">
-          <div class="spread"><strong>#{{ r.documentNumber }} · {{ formatVnd(r.amountDong) }}</strong><ApprovalProgress :request="r" /></div>
-          <div class="muted small">Waiting for: {{ r.outstanding.join(", ") || "network signature" }}</div>
+        <RouterLink v-for="r in inbox.mine" :key="r.id" :to="`/requests/${r.id}`" class="card card-link">
+          <div class="spread"><strong>{{ OPERATION_LABEL[r.operation] }}: {{ r.keyName }}</strong><QuorumProgress :request="r" /></div>
+          <div class="muted small">{{ REQUEST_STATUS[r.status].label }}</div>
         </RouterLink>
       </section>
 
-      <section v-if="drafts.length" class="stack">
-        <h2>Your drafts ({{ drafts.length }})</h2>
-        <RouterLink v-for="d in drafts" :key="d.id" :to="`/documents/${d.id}`" class="card card-link">
-          <div class="spread"><strong>{{ DOC_TYPE_LABEL[d.type] }} #{{ d.number }} · {{ d.title }}</strong><span class="num">{{ compactVnd(d.amountDong) }}</span></div>
-        </RouterLink>
-      </section>
-
-      <section v-if="signed.length" class="stack">
-        <h2>Recently signed</h2>
-        <RouterLink v-for="d in signed" :key="d.id" :to="`/documents/${d.id}`" class="card card-link">
-          <div class="spread"><span>#{{ d.number }} · {{ d.title }}</span><span class="badge tone-approved">✓ Signed</span></div>
+      <section v-if="inbox.recent.length" class="stack">
+        <h2>Recent</h2>
+        <RouterLink v-for="r in inbox.recent" :key="r.id" :to="`/requests/${r.id}`" class="card card-link">
+          <div class="spread"><span>{{ OPERATION_LABEL[r.operation] }}: {{ r.keyName }} · {{ r.requester.name }}</span><StatusBadge :tone="REQUEST_STATUS[r.status].tone" :label="REQUEST_STATUS[r.status].label" /></div>
         </RouterLink>
       </section>
     </template>
