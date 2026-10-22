@@ -60,6 +60,8 @@ Unlocking is the same flow with `doDraftDecryption` / `doCommitDecryption`. The 
 
 Why the requester approves **last**: approvals are independent (each signs only the request's creation), so the server hands the other members' approvals to the requester alone, and only once they are complete. Nobody else ever holds a request the network would accept. A released secret is shown only after the release is recorded on the audit log.
 
+**Insights** (owner / realm admin): a security dashboard with vault risk, unauthorized attempts, potential-fraud alerts, a per-key risk score, daily activity and the audit log with a verdict per entry. The counts come from the real audit log; **the "AI risk model" is simulated for the demo** (`frontend/src/lib/riskModel.ts`: fixed rules plus seeded generated history, stable for a whole day so recordings don't change). It reads metadata only, never a secret. Untick "Include simulated history" to see real data alone.
+
 **Audit log**: every step is a hash-chained entry, so editing any past entry breaks the chain (Audit → Verify chain). Refused attempts (a requester trying to approve their own request, someone off the board) are logged too.
 
 ## Run it
