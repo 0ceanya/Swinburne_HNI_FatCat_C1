@@ -9,6 +9,7 @@ const links = computed(() => [
   { to: "/vault", label: "Vault", icon: "🔐", show: true },
   { to: "/board", label: "Board", icon: "👥", show: true },
   { to: "/audit", label: "Audit", icon: "🧾", show: true },
+  { to: "/insights", label: "Insights", icon: "📊", show: session.has("owner") || !!session.me?.isRealmAdmin },
   { to: "/setup", label: "Tide setup", icon: "🔑", show: !!session.me?.isRealmAdmin },
 ].filter((l) => l.show));
 const mobileLinks = computed(() => [...links.value.filter((l) => ["/", "/vault", "/audit"].includes(l.to)), { to: "/me", label: "Me", icon: "👤", show: true }]);
